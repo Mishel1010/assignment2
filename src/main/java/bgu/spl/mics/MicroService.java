@@ -25,6 +25,7 @@ public abstract class MicroService implements Runnable {
     private boolean terminated = false;
     private final String name;
     private ConcurrentLinkedQueue<Message> q;
+    
 
     /**
      * @param name the micro-service name (used mainly for debugging purposes -
@@ -32,6 +33,7 @@ public abstract class MicroService implements Runnable {
      */
     public MicroService(String name) {
         this.name = name;
+        this.q = new ConcurrentLinkedQueue();
     }
 
     /**
@@ -56,7 +58,7 @@ public abstract class MicroService implements Runnable {
      *                 queue.
      */
     protected final <T, E extends Event<T>> void subscribeEvent(Class<E> type, Callback<E> callback) {
-        //TODO: implement this.
+        
     }
 
     /**
@@ -96,8 +98,7 @@ public abstract class MicroService implements Runnable {
      * 	       			null in case no micro-service has subscribed to {@code e.getClass()}.
      */
     protected final <T> Future<T> sendEvent(Event<T> e) {
-        //TODO: implement this.
-        return null; //TODO: delete this line :)
+        return (MessageBusImpl.sendEvent(e));
     }
 
     /**
@@ -158,6 +159,17 @@ public abstract class MicroService implements Runnable {
     }
 
     public void addMessage(Message m){
+        q.offer(m);
+        notifyAll(); //notify the waiting thread in the messagebus.awaitmessage
 
 }
+
+   public Message popmessage(){
+    return q.poll();
+   }
+
+
+   public boolean isfree(){ //if there are no messages
+    return q.isEmpty();
+   }
 }
