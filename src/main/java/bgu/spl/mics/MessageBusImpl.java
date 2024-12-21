@@ -1,5 +1,7 @@
 package bgu.spl.mics;
+import java.util.AbstractMap;
 import java.util.concurrent.*;
+import java.util.Map
 
 /**
  * The {@link MessageBusImpl class is the implementation of the MessageBus interface.
@@ -23,12 +25,12 @@ public class MessageBusImpl implements MessageBus {
 
 	@Override
 	public <T> void complete(Event<T> e, T result) {
-		// TODO Auto-generated method stub
-
-	}
+		Future fut = new Future<T>();
+		fut.resolve(result);
+    }
 
 	@Override
-	public void sendBroadcast(Broadcast b) {
+	public void sendBroadcast(Broadcast b) { //sends the broadcast to all of the subscribers
 		for(MicroService mike: (broadcasts.get(b))) {
 			mike.addMessage(b);
 		}
@@ -39,26 +41,40 @@ public class MessageBusImpl implements MessageBus {
 	@Override
 	public <T> Future<T> sendEvent(Event<T> e) {
 		ConcurrentLinkedQueue<MicroService> q = events.get(e);
+		if (q.peek() == null){
+			return null;
+		}
 		q.peek().addMessage(e);
 		q.offer(q.poll());
+		return new Future();
 	}
 
 	@Override
 	public void register(MicroService m) {
-		// TODO Auto-generated method stub
-
+		m.setMessageBus(this);
 	}
 
 	@Override
 	public void unregister(MicroService m) {
-		// TODO Auto-generated method stub
+		while(!(m.subscribedTo.isEmpty())){
+			Map.Entry<Class<? extends Message>,Callback> entry = m.subscribedTo.poll();
+			broadcasts.get(entry.getKey()).remove(m);
+			events.get(entry.getKey()).remove(m);
 
+		}
+		m.subscribedTo = null;
 	}
 
 	@Override
-	public Message awaitMessage(MicroService m) throws InterruptedException {
-		// TODO Auto-generated method stub
-		return null;
+	public synchronized Message awaitMessage(MicroService m)  {
+		while (m.isfree()) { //has no messages in it's queue
+			try{
+				m.wait();
+			}
+			catch(InterruptedException ignored){}
+			
+		}
+	return m.popmessage();
 	}
 
 	

@@ -25,7 +25,9 @@ public abstract class MicroService implements Runnable {
     private boolean terminated = false;
     private final String name;
     private ConcurrentLinkedQueue<Message> q;
-    
+    private MessageBusImpl bus;
+    public 
+
 
     /**
      * @param name the micro-service name (used mainly for debugging purposes -
@@ -34,6 +36,8 @@ public abstract class MicroService implements Runnable {
     public MicroService(String name) {
         this.name = name;
         this.q = new ConcurrentLinkedQueue();
+        this.bus = null;
+        this.subscribedTo = new ConcurrentLinkedQueue();
     }
 
     /**
@@ -58,7 +62,8 @@ public abstract class MicroService implements Runnable {
      *                 queue.
      */
     protected final <T, E extends Event<T>> void subscribeEvent(Class<E> type, Callback<E> callback) {
-        
+       bus.subscribeEvent(type, this); 
+       subscribedTo.offer(type);
     }
 
     /**
@@ -82,7 +87,8 @@ public abstract class MicroService implements Runnable {
      *                 queue.
      */
     protected final <B extends Broadcast> void subscribeBroadcast(Class<B> type, Callback<B> callback) {
-        //TODO: implement this.
+        bus.subscribeBroadcast(type, this);
+        subscribedTo.offer(type);
     }
 
     /**
@@ -98,7 +104,7 @@ public abstract class MicroService implements Runnable {
      * 	       			null in case no micro-service has subscribed to {@code e.getClass()}.
      */
     protected final <T> Future<T> sendEvent(Event<T> e) {
-        return (MessageBusImpl.sendEvent(e));
+        return (bus.sendEvent(e));
     }
 
     /**
@@ -108,7 +114,7 @@ public abstract class MicroService implements Runnable {
      * @param b The broadcast message to send
      */
     protected final void sendBroadcast(Broadcast b) {
-        //TODO: implement this.
+        bus.sendBroadcast(b);
     }
 
     /**
@@ -122,7 +128,7 @@ public abstract class MicroService implements Runnable {
      *               {@code e}.
      */
     protected final <T> void complete(Event<T> e, T result) {
-        //TODO: implement this.
+        bus.complete(e, result);
     }
 
     /**
@@ -151,10 +157,10 @@ public abstract class MicroService implements Runnable {
      * otherwise you will end up in an infinite loop.
      */
     @Override
-    public final void run() {
+    public final void run() { 
         initialize();
         while (!terminated) {
-            System.out.println("NOT IMPLEMENTED!!!"); //TODO: you should delete this line :)
+            bus.awaitMessage(this); //taking messages from the bus
         }
     }
 
@@ -171,5 +177,10 @@ public abstract class MicroService implements Runnable {
 
    public boolean isfree(){ //if there are no messages
     return q.isEmpty();
+   }
+
+
+   public void setMessageBus(MessageBusImpl messagebus){
+    this.bus = messagebus;
    }
 }

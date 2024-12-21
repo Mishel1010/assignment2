@@ -66,8 +66,16 @@ public class Future<T> {
      * 	       wait for {@code timeout} TimeUnits {@code unit}. If time has
      *         elapsed, return null.
      */
-	public T get(long timeout, TimeUnit unit) {
+	public synchronized T get(long timeout, TimeUnit unit) {
 		
+        long endTime = System.nanoTime() + unit.toNanos(timeout); // Convert timeout to nanoseconds
+		while(!isDone() && endTime > System.nanoTime()){
+			try{
+				wait();
+			}
+			catch (InterruptedException ignored){}
+		}
+		return resolution;
 		
 	}
 
