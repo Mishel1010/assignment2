@@ -13,7 +13,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 public class Camera {
     private int id;
     private int frequency;
-    private status status;
+    private STATUS status;
     private ArrayList<StampedDetectedObjects> DetectObjectsList;
 
 
@@ -22,7 +22,7 @@ public class Camera {
     public Camera(int id, int frequency){
         this.id = id;
         this.frequency = frequency;
-        this.status = status.error;
+        this.status = STATUS.ERROR;
         this.DetectObjectsList = new ArrayList<>();
     }
 }
@@ -32,6 +32,4 @@ public class Camera {
 
 
 
- enum status{
-    up, down, error;
-}
+ 

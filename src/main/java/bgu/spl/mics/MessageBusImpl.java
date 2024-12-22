@@ -1,7 +1,7 @@
 package bgu.spl.mics;
 import java.util.AbstractMap;
 import java.util.concurrent.*;
-import java.util.Map
+import java.util.Map;
 
 /**
  * The {@link MessageBusImpl class is the implementation of the MessageBus interface.
@@ -12,27 +12,38 @@ public class MessageBusImpl implements MessageBus {
 	//fields
 	private ConcurrentHashMap<Class<? extends Event>, ConcurrentLinkedQueue<MicroService>> events;
 	private ConcurrentHashMap<Class<? extends Broadcast>, ConcurrentLinkedQueue<MicroService>> broadcasts;
+	private  ConcurrentHashMap <MicroService, ConcurrentLinkedQueue<Message>> microservices;
+	private  ConcurrentHashMap <MicroService, ConcurrentLinkedQueue<Class<? extends Message>>> subscripsions;
 
 	@Override
 	public <T> void subscribeEvent(Class<? extends Event<T>> type, MicroService m) {
+		synchronized (this){
+		if (events == null){
+			events = new ConcurrentHashMap<Class<? extends Event>, ConcurrentLinkedQueue<MicroService>>();
+		}}
 		events.computeIfAbsent(type, key -> new ConcurrentLinkedQueue<>()).add(m);
+		subscripsions.get(m).offer(type);
 	}
 
 	@Override
 	public void subscribeBroadcast(Class<? extends Broadcast> type, MicroService m) {
+		synchronized(this){
+			if (broadcasts == null){
+				broadcasts = new ConcurrentHashMap<Class<? extends Broadcast>, ConcurrentLinkedQueue<MicroService>>();
+		}}
 		broadcasts.computeIfAbsent(type, key -> new ConcurrentLinkedQueue<>()).add(m);
+		subscripsions.get(m).offer(type);
 	}
 
 	@Override
 	public <T> void complete(Event<T> e, T result) {
-		Future fut = new Future<T>();
-		fut.resolve(result);
+		
     }
 
 	@Override
 	public void sendBroadcast(Broadcast b) { //sends the broadcast to all of the subscribers
 		for(MicroService mike: (broadcasts.get(b))) {
-			mike.addMessage(b);
+			microservices.get(mike).offer(b);
 		}
 
 	}
@@ -46,23 +57,22 @@ public class MessageBusImpl implements MessageBus {
 		}
 		q.peek().addMessage(e);
 		q.offer(q.poll());
-		return new Future();
-	}
+	}   
 
 	@Override
 	public void register(MicroService m) {
-		m.setMessageBus(this);
+		microservices.put(m, new ConcurrentLinkedQueue());
 	}
 
 	@Override
 	public void unregister(MicroService m) {
-		while(!(m.subscribedTo.isEmpty())){
-			Map.Entry<Class<? extends Message>,Callback> entry = m.subscribedTo.poll();
-			broadcasts.get(entry.getKey()).remove(m);
-			events.get(entry.getKey()).remove(m);
+	   for (Class<? extends Message> note : subscripsions.get(m)){
+		if (!(events.get(note).remove(m)){
+		broadcasts.get(note).remove(m);
+	   }	
 
 		}
-		m.subscribedTo = null;
+		
 	}
 
 	@Override
