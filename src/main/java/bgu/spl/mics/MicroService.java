@@ -1,5 +1,7 @@
 package bgu.spl.mics;
 
+import java.util.AbstractMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -21,12 +23,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * <p>
  */
 public abstract class MicroService implements Runnable {
-
     private boolean terminated = false;
     private final String name;
     private ConcurrentLinkedQueue<Message> q;
     private MessageBusImpl bus;
-    public 
+    public ConcurrentLinkedQueue<Map.Entry<Class<? extends Message>,Callback>> subscribedTo;
 
 
     /**
@@ -63,7 +64,9 @@ public abstract class MicroService implements Runnable {
      */
     protected final <T, E extends Event<T>> void subscribeEvent(Class<E> type, Callback<E> callback) {
        bus.subscribeEvent(type, this); 
-       subscribedTo.offer(type);
+       Map.Entry<Class<? extends Message>, Callback> entry = new AbstractMap.SimpleEntry<>(type, callback);
+       subscribedTo.offer(entry);
+       bus.subscribeEvent(type,this);
     }
 
     /**
@@ -87,8 +90,9 @@ public abstract class MicroService implements Runnable {
      *                 queue.
      */
     protected final <B extends Broadcast> void subscribeBroadcast(Class<B> type, Callback<B> callback) {
-        bus.subscribeBroadcast(type, this);
-        subscribedTo.offer(type);
+        Map.Entry<Class<? extends Message>, Callback> entry = new AbstractMap.SimpleEntry<>(type, callback);
+       subscribedTo.offer(entry);
+       bus.subscribeBroadcast(type,this);
     }
 
     /**
