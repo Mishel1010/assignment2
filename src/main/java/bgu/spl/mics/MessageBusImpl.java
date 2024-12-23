@@ -11,9 +11,12 @@ import java.util.Map;
 public class MessageBusImpl implements MessageBus {
 	//fields
 	private ConcurrentHashMap<Class<? extends Event>, ConcurrentLinkedQueue<MicroService>> events;
-	private ConcurrentHashMap<Class<? extends Broadcast>, ConcurrentLinkedQueue<MicroService>> broadcasts;
-	private  ConcurrentHashMap <MicroService, ConcurrentLinkedQueue<Message>> microservices;
+    private ConcurrentHashMap<Class<? extends Broadcast>, ConcurrentLinkedQueue<MicroService>> broadcasts;
+    private ConcurrentHashMap<MicroService, ConcurrentLinkedQueue<Message>> microservices;
 	private  ConcurrentHashMap <MicroService, ConcurrentLinkedQueue<Class<? extends Message>>> subscripsions;
+	private MessageBusImpl instance;
+
+	privte MessageBusImpl(){}
 
 	@Override
 	public <T> void subscribeEvent(Class<? extends Event<T>> type, MicroService m) {
@@ -55,8 +58,8 @@ public class MessageBusImpl implements MessageBus {
 		if (q.peek() == null){
 			return null;
 		}
-		q.peek().addMessage(e);
-		q.offer(q.poll());
+		microservices.get(q.peek()).offer(e);
+		notifyAll();
 	}   
 
 	@Override
@@ -77,16 +80,20 @@ public class MessageBusImpl implements MessageBus {
 
 	@Override
 	public synchronized Message awaitMessage(MicroService m)  {
-		while (m.isfree()) { //has no messages in it's queue
+		while (microservices.get(m).isEmpty()) { //has no messages in it's queue
 			try{
 				m.wait();
 			}
 			catch(InterruptedException ignored){}
 			
 		}
-	return m.popmessage();
 	}
 
-	
+	public MessageBusImpl getInstance(){
+		if (instance == null){
+			instance = new MessageBusImpl();
+		}
+		return instance;
+	}
 
 }
