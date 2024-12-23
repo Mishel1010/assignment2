@@ -14,7 +14,7 @@ public class MessageBusImpl implements MessageBus {
     private ConcurrentHashMap<Class<? extends Broadcast>, ConcurrentLinkedQueue<MicroService>> broadcasts;
     private ConcurrentHashMap<MicroService, ConcurrentLinkedQueue<Message>> microservices;
 	private  ConcurrentHashMap <MicroService, ConcurrentLinkedQueue<Class<? extends Message>>> subscripsions;
-	private MessageBusImpl instance;
+	private static MessageBusImpl instance;
 
 	privte MessageBusImpl(){}
 
@@ -40,7 +40,7 @@ public class MessageBusImpl implements MessageBus {
 
 	@Override
 	public <T> void complete(Event<T> e, T result) {
-		
+		Eventimpl (e).fut.resolve(result);
     }
 
 	@Override
@@ -87,9 +87,10 @@ public class MessageBusImpl implements MessageBus {
 			catch(InterruptedException ignored){}
 			
 		}
+		return microservices.get(m).poll();
 	}
 
-	public MessageBusImpl getInstance(){
+	public static MessageBusImpl getInstance(){
 		if (instance == null){
 			instance = new MessageBusImpl();
 		}
