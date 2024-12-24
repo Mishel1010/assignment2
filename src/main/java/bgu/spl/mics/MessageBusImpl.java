@@ -13,29 +13,26 @@ public class MessageBusImpl implements MessageBus {
 	private ConcurrentHashMap<Class<? extends Event>, ConcurrentLinkedQueue<MicroService>> events;
     private ConcurrentHashMap<Class<? extends Broadcast>, ConcurrentLinkedQueue<MicroService>> broadcasts;
     private ConcurrentHashMap<MicroService, ConcurrentLinkedQueue<Message>> microservices;
-	private  ConcurrentHashMap <MicroService, ConcurrentLinkedQueue<Class<? extends Message>>> subscripsions;
-	private static MessageBusImpl instance;
+	private  ConcurrentHashMap <MicroService, ConcurrentLinkedQueue<Class<? extends Message>>> subscriptions;
+	private static volatile MessageBusImpl instance;
 
-	privte MessageBusImpl(){}
+	private MessageBusImpl() {
+		events = new ConcurrentHashMap<>();
+		broadcasts = new ConcurrentHashMap<>();
+		microservices = new ConcurrentHashMap<>();
+		subscriptions = new ConcurrentHashMap<>();
+	}
 
 	@Override
 	public <T> void subscribeEvent(Class<? extends Event<T>> type, MicroService m) {
-		synchronized (this){
-		if (events == null){
-			events = new ConcurrentHashMap<Class<? extends Event>, ConcurrentLinkedQueue<MicroService>>();
-		}}
 		events.computeIfAbsent(type, key -> new ConcurrentLinkedQueue<>()).add(m);
-		subscripsions.get(m).offer(type);
+		subscriptions.computeIfAbsent(m, key -> new ConcurrentLinkedQueue<>()).offer(type);
 	}
 
 	@Override
 	public void subscribeBroadcast(Class<? extends Broadcast> type, MicroService m) {
-		synchronized(this){
-			if (broadcasts == null){
-				broadcasts = new ConcurrentHashMap<Class<? extends Broadcast>, ConcurrentLinkedQueue<MicroService>>();
-		}}
 		broadcasts.computeIfAbsent(type, key -> new ConcurrentLinkedQueue<>()).add(m);
-		subscripsions.get(m).offer(type);
+		subscriptions.computeIfAbsent(m, key -> new ConcurrentLinkedQueue<>()).offer(type);
 	}
 
 	@Override
@@ -45,12 +42,19 @@ public class MessageBusImpl implements MessageBus {
 
 	@Override
 	public void sendBroadcast(Broadcast b) { //sends the broadcast to all of the subscribers
-		for(MicroService mike: (broadcasts.get(b))) {
-			microservices.get(mike).offer(b);
+		ConcurrentLinkedQueue<MicroService> queue = broadcasts.get(b.getClass());
+		if (queue != null) 
+		{
+			for (MicroService mike: queue)
+			{
+				microservices.get(mike).offer(b);
+				synchronized (microservices.get(mike))
+				{
+					microservices.get(mike).notifyAll();
+				}
+			}
 		}
-
 	}
-
 	
 	@Override
 	public <T> Future<T> sendEvent(Event<T> e) {
@@ -70,32 +74,38 @@ public class MessageBusImpl implements MessageBus {
 
 	@Override
 	public void unregister(MicroService m) {
-	   for (Class<? extends Message> note : subscripsions.get(m)){
-		if (!(events.get(note).remove(m)){
-		broadcasts.get(note).remove(m);
-	   }	
-
-		}
-		
+		for (Class<? extends Message> note : subscriptions.get(m))
+		{
+			if (!(events.get(note).remove(m)))
+			{
+				broadcasts.get(note).remove(m);
+	    	}	
+		}	
 	}
 
 	@Override
 	public synchronized Message awaitMessage(MicroService m)  {
 		while (microservices.get(m).isEmpty()) { //has no messages in it's queue
-			try{
+			try
+			{
 				m.wait();
 			}
-			catch(InterruptedException ignored){}
-			
+			catch(InterruptedException ignored){}		
 		}
 		return microservices.get(m).poll();
 	}
 
 	public static MessageBusImpl getInstance(){
-		if (instance == null){
-			instance = new MessageBusImpl();
+		if (instance == null)
+		{
+			synchronized (MessageBusImpl.class)
+			{
+				if (instance == null)
+				{
+					instance = new MessageBusImpl();
+				}
+			}
 		}
-		return instance;
+		return instance; 
 	}
-
 }
