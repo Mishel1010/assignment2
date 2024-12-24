@@ -63,9 +63,19 @@ public class MessageBusImpl implements MessageBus {
 		{
 			return null;
 		}
-		microservices.get(q.peek()).offer(e);
-		q.offer(q.poll());
-		notifyAll();
+		MicroService a;
+		synchronized(q)   //transferring the first microservice in the queue to be the last
+		{
+			a = q.poll();
+		    q.offer(a);
+		}
+		ConcurrentLinkedQueue<Message> aQueue = microservices.get(a);
+        synchronized (aQueue)
+		{
+            aQueue.offer(e);     //adding the event to the microservice's queue
+            aQueue.notifyAll(); // Notify the thread waiting on this queue
+        }
+    
 		return e.getFuture();
 	}   
 
@@ -75,7 +85,7 @@ public class MessageBusImpl implements MessageBus {
 	}
 
 	@Override
-	public void unregister(MicroService m) {
+	public synchronized void  unregister(MicroService m) {
 		for (Class<? extends Message> note : subscriptions.get(m))
 		{
 			if (!(events.get(note).remove(m)))
@@ -83,6 +93,8 @@ public class MessageBusImpl implements MessageBus {
 				broadcasts.get(note).remove(m);
 	    	}	
 		}	
+		subscriptions.remove(m);
+		microservices.remove(m);
 	}
 
 	@Override
