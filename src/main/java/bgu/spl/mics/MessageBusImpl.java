@@ -64,9 +64,9 @@ public class MessageBusImpl implements MessageBus {
 			return null;
 		}
 		MicroService a;
-		synchronized(q)   //transferring the first microservice in the queue to be the last
+		synchronized(q)   
 		{
-			a = q.poll();
+			a = q.poll();  //transferring the first microservice in the queue to be the last
 		    q.offer(a);
 		}
 		ConcurrentLinkedQueue<Message> aQueue = microservices.get(a);
