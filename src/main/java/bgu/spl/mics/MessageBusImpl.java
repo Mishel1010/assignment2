@@ -40,7 +40,7 @@ public class MessageBusImpl implements MessageBus {
 
 	@Override
 	public <T> void complete(Event<T> e, T result) {
-		Eventimpl (e).fut.resolve(result);
+		e.resolveFuture(result);
     }
 
 	@Override
@@ -60,6 +60,7 @@ public class MessageBusImpl implements MessageBus {
 		}
 		microservices.get(q.peek()).offer(e);
 		notifyAll();
+		return e.getFuture();
 	}   
 
 	@Override
