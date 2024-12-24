@@ -1,7 +1,7 @@
 package bgu.spl.mics;
-
 import java.util.AbstractMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -25,9 +25,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public abstract class MicroService implements Runnable {
     private boolean terminated = false;
     private final String name;
-    private ConcurrentLinkedQueue<Message> q;
-    private MessageBusImpl bus;
-    public ConcurrentLinkedQueue<Map.Entry<Class<? extends Message>,Callback>> subscribedTo;
+    private ConcurrentHashMap<Class<? extends Message>, Callback> callbacks;
+  
 
 
     /**
@@ -36,9 +35,7 @@ public abstract class MicroService implements Runnable {
      */
     public MicroService(String name) {
         this.name = name;
-        this.q = new ConcurrentLinkedQueue();
-        this.bus = null;
-        this.subscribedTo = new ConcurrentLinkedQueue();
+        this.callbacks = new ConcurrentHashMap<Class<? extends Message>, Callback>();
     }
 
     /**
@@ -63,10 +60,8 @@ public abstract class MicroService implements Runnable {
      *                 queue.
      */
     protected final <T, E extends Event<T>> void subscribeEvent(Class<E> type, Callback<E> callback) {
-       bus.subscribeEvent(type, this); 
-       Map.Entry<Class<? extends Message>, Callback> entry = new AbstractMap.SimpleEntry<>(type, callback);
-       subscribedTo.offer(entry);
-       bus.subscribeEvent(type,this);
+        callbacks.put(type, callback);
+     MessageBusImpl.getInstance().subscribeEvent(type, this);
     }
 
     /**
@@ -90,9 +85,8 @@ public abstract class MicroService implements Runnable {
      *                 queue.
      */
     protected final <B extends Broadcast> void subscribeBroadcast(Class<B> type, Callback<B> callback) {
-        Map.Entry<Class<? extends Message>, Callback> entry = new AbstractMap.SimpleEntry<>(type, callback);
-       subscribedTo.offer(entry);
-       bus.subscribeBroadcast(type,this);
+      callbacks.put(type, callback);
+      MessageBusImpl.getInstance().subscribeBroadcast(type,this);
     }
 
     /**
@@ -108,7 +102,7 @@ public abstract class MicroService implements Runnable {
      * 	       			null in case no micro-service has subscribed to {@code e.getClass()}.
      */
     protected final <T> Future<T> sendEvent(Event<T> e) {
-        return (bus.sendEvent(e));
+        return (MessageBusImpl.getInstance().sendEvent(e));
     }
 
     /**
@@ -118,7 +112,7 @@ public abstract class MicroService implements Runnable {
      * @param b The broadcast message to send
      */
     protected final void sendBroadcast(Broadcast b) {
-        bus.sendBroadcast(b);
+        MessageBusImpl.getInstance().sendBroadcast(b);
     }
 
     /**
@@ -132,7 +126,7 @@ public abstract class MicroService implements Runnable {
      *               {@code e}.
      */
     protected final <T> void complete(Event<T> e, T result) {
-        bus.complete(e, result);
+        MessageBusImpl.getInstance().complete(e, result);
     }
 
     /**
@@ -164,27 +158,9 @@ public abstract class MicroService implements Runnable {
     public final void run() { 
         initialize();
         while (!terminated) {
-            bus.awaitMessage(this); //taking messages from the bus
+           callbacks.get(MessageBusImpl.getInstance().awaitMessage(this)).call(this); //taking messages from the bus
         }
     }
 
-    public void addMessage(Message m){
-        q.offer(m);
-        notifyAll(); //notify the waiting thread in the messagebus.awaitmessage
 
-}
-
-   public Message popmessage(){
-    return q.poll();
-   }
-
-
-   public boolean isfree(){ //if there are no messages
-    return q.isEmpty();
-   }
-
-
-   public void setMessageBus(MessageBusImpl messagebus){
-    this.bus = messagebus;
-   }
 }
