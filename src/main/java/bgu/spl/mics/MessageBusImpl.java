@@ -25,13 +25,13 @@ public class MessageBusImpl implements MessageBus {
 
 	@Override
 	public <T> void subscribeEvent(Class<? extends Event<T>> type, MicroService m) {
-		events.computeIfAbsent(type, key -> new ConcurrentLinkedQueue<>()).add(m);
+		events.computeIfAbsent(type, key -> new ConcurrentLinkedQueue<>()).offer(m);
 		subscriptions.computeIfAbsent(m, key -> new ConcurrentLinkedQueue<>()).offer(type);
 	}
 
 	@Override
 	public void subscribeBroadcast(Class<? extends Broadcast> type, MicroService m) {
-		broadcasts.computeIfAbsent(type, key -> new ConcurrentLinkedQueue<>()).add(m);
+		broadcasts.computeIfAbsent(type, key -> new ConcurrentLinkedQueue<>()).offer(m);
 		subscriptions.computeIfAbsent(m, key -> new ConcurrentLinkedQueue<>()).offer(type);
 	}
 
@@ -58,11 +58,13 @@ public class MessageBusImpl implements MessageBus {
 	
 	@Override
 	public <T> Future<T> sendEvent(Event<T> e) {
-		ConcurrentLinkedQueue<MicroService> q = events.get(e);
-		if (q.peek() == null){
+		ConcurrentLinkedQueue<MicroService> q = events.get(e.getClass());
+		if (q == null || q.peek() == null) 
+		{
 			return null;
 		}
 		microservices.get(q.peek()).offer(e);
+		q.offer(q.poll());
 		notifyAll();
 		return e.getFuture();
 	}   
