@@ -1,6 +1,8 @@
 package bgu.spl.mics.application.services;
 
+import bgu.spl.mics.MessageBusImpl;
 import bgu.spl.mics.MicroService;
+import bgu.spl.mics.application.objects.LiDarWorkerTracker;
 
 /**
  * LiDarService is responsible for processing data from the LiDAR sensor and
@@ -11,15 +13,15 @@ import bgu.spl.mics.MicroService;
  * observations.
  */
 public class LiDarService extends MicroService {
-
+    public LiDarWorkerTracker lidarTracker;
     /**
      * Constructor for LiDarService.
      *
      * @param liDarTracker The LiDAR tracker object that this service will use to process data.
      */
     public LiDarService(LiDarTracker liDarTracker) {
-        super("Change_This_Name");
-        // TODO Implement this
+        super("Lidar" + liDarTracker);
+        this.lidarTracker = lidarTracker;
     }
 
     /**
@@ -29,6 +31,7 @@ public class LiDarService extends MicroService {
      */
     @Override
     protected void initialize() {
-        // TODO Implement this
+        MessageBusImpl.getInstance().register(this);
+        subscribeEvent(DetectObjectsEvents.class, new detObjCallback());
     }
 }
