@@ -18,4 +18,8 @@ public GPSIMU (){
     this.status = STATUS.ERROR;
     this.PoseList = new ArrayList<>();
 }
+
+public Pose getPose(){
+    return PoseList.get(currentTick);
+}
 }
