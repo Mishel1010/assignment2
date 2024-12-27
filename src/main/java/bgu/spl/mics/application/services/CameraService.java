@@ -36,8 +36,14 @@ public class CameraService extends MicroService {
     @Override
     protected void initialize() {  //subscribes to all relevant messages
         MessageBusImpl.getInstance().register(this);
-        subscribeBroadcast(TerminatedBroadcast.class, );
-        subscribeBroadcast(TickBroadcast.class, );
-        subscribeBroadcast(CrashedBroadcast.class, );  
+        subscribeBroadcast(TerminatedBroadcast.class, broadcast -> {
+            //TODO: implement
+        });
+        subscribeBroadcast(TickBroadcast.class, tick -> {
+            //TODO: implement
+        });
+        subscribeBroadcast(CrashedBroadcast.class, broadcast -> {
+            //TODO: implement
+        });  
     }
 }

@@ -10,4 +10,8 @@ public class TickBroadcast implements Broadcast {
         this.time = time;
     }
 
+    public int getTime(){
+        return time;
+    }   
+
 }
