@@ -27,4 +27,8 @@ public class StampedCloudPoints {
     public ArrayList<ArrayList<CloudPoint>> getCloudPoints(){
         return this.cloudPoints;
     }
+
+    public String getID(){
+        return id;
+    }
 }

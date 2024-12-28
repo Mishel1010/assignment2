@@ -15,4 +15,10 @@ public class DetectedObject {
     this.description = description;
    }
 
+
+
+public String getID() {
+  return this.id;
+}
+
 }

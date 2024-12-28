@@ -10,34 +10,48 @@ public class StatisticalFolder {
     private int numDetectedObjects;
     private int numTrackedObjects;
     private int numLandmarks;
-
-
-
-    public StatisticalFolder(){
-        this.systemRuntime = 0;
+    private static StatisticalFolder instance;
+    
+    
+    private StatisticalFolder(int systemRuntime){
+        this.systemRuntime = systemRuntime;
         this.numDetectedObjects = 0;
         this.numTrackedObjects = 0;
         this.numLandmarks = 0;
     }
+
+    public StatisticalFolder getInstance(int systemRuntime){
+      if (instance != null){
+         return instance;
+      }
+      synchronized(Instance){
+
+      }
+   }
     
+   
+   public StatisticalFolder withIncrementedDetectedObjects() {
+      return new StatisticalFolder(systemRuntime, numDetectedObjects + 1, numTrackedObjects, numLandmarks);
+  }
 
+  /**
+   * Creates a new instance of StatisticalFolder with an incremented tracked object count.
+   * @return A new StatisticalFolder instance with updated tracked object count.
+   */
+  public StatisticalFolder withIncrementedTrackedObjects() {
+      return new StatisticalFolder(systemRuntime, numDetectedObjects, numTrackedObjects + 1, numLandmarks);
+  }
 
-     public void incrementDetected (){
-        numDetectedObjects++;
-     }
-
-     public void incrementTracked(){
-        numTrackedObjects++;
-     }
-
-     public void incrementLandmarks(){
-        numLandmarks++;
-     }
-
-
-
-
-
+  /**
+   * Creates a new instance of StatisticalFolder with an incremented landmark count.
+   * @return A new StatisticalFolder instance with updated landmark count.
+   */
+  public StatisticalFolder withIncrementedLandmarks() {
+      return new StatisticalFolder(systemRuntime, numDetectedObjects, numTrackedObjects, numLandmarks + 1);
+  }
+}
+     
+   
 
 
 }

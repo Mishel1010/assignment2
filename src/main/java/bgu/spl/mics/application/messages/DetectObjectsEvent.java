@@ -3,6 +3,7 @@ import java.util.ArrayList;
 import bgu.spl.mics.Event;
 import bgu.spl.mics.Future;
 import bgu.spl.mics.application.objects.DetectedObject;
+
 public class DetectObjectsEvent  implements Event{
 
         public Future future;
@@ -22,6 +23,10 @@ public class DetectObjectsEvent  implements Event{
         @Override
         public void resolveFuture(Object result){
             this.future.resolve(result);
+        }
+
+        public ArrayList<DetectedObject> getObjects(){
+            return this.objects;
         }
     
     }

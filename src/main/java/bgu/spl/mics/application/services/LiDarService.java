@@ -1,19 +1,19 @@
 package bgu.spl.mics.application.services;
 import bgu.spl.mics.application.messages.DetectEbjectsEvent;
-
 import java.io.FileReader;
 import java.util.ArrayList;
-
+import java.util.HashMap;
 import javax.security.auth.login.Configuration;
-
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
+import bgu.spl.mics.application.messages.DetectObjectsEvent;
 import bgu.spl.mics.MessageBusImpl;
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.objects.LiDarDataBase;
 import bgu.spl.mics.application.objects.LiDarWorkerTracker;
 import bgu.spl.mics.application.objects.StampedCloudPoints;
+import bgu.spl.mics.application.objects.StatisticalFolder;
+import bgu.spl.mics.application.objects.TrackedObject;
 
 /**
  * LiDarService is responsible for processing data from the LiDAR sensor and
@@ -28,6 +28,7 @@ public class LiDarService extends MicroService {
     private int counter;
     private int time;
     private String dataBasePath;
+    private HashMap <Integer, ArrayList<ArrayList<TrackedObject>>> pendingObjects;
     
     /**
      * Constructor for LiDarService.
@@ -36,6 +37,7 @@ public class LiDarService extends MicroService {
      */
     public LiDarService(LiDarTracker liDarTracker) {
         super("Lidar" + liDarTracker);
+        pendingObjects = new HashMap<>();
         this.lidarTracker = lidarTracker;
         this.counter = 0;
         FileReader reader = new FileReader("./config.json");
@@ -58,22 +60,11 @@ public class LiDarService extends MicroService {
     @Override
     protected void initialize() {
         MessageBusImpl.getInstance().register(this);
-        subscribeEvent(DetectObjectsEvents.class, type ->{
-          time++;
-          ArrayList<StampedCloudPoints> clouds = LiDarDataBase.getInstance(dataBasePath).getCloudPoints();
 
-          while (clouds[counter].getTime() < this.time){
-            counter++;
-          while(clouds[counter].getTime() == this.time){
-            
+        subscribeEvent(DetectObjectsEvents.class, DetectEbjectsEvent->{
+            ArrayList<TrackedObject> tracked = new ArrayList<>();
+            ArrayList detected = (DetectEbjectsEvent)Message.getObjects();
+            for(DetectedObject  det : (DetectEbjectsEvent)Message.objects){
 
-                     
-                    }
-                }
-
-                
-            
-
-        } 
-    }
-}
+          }
+          
